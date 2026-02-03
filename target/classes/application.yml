@@ -1,0 +1,18 @@
+server:
+  port: 8080 # ??????
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3305/micro_teaching_db?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root        # ???????
+    password: 123456 # ???????
+
+# ??????? (????????)
+wechat:
+  appid: wx7e7287cb9e31f360 # ???????????? AppID
+  secret: 6b1c4e4cd7c95061ded7b8efec848b2a # ????? AppSecret
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true # ???????? (user_id -> userId)
