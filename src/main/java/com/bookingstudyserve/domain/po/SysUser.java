@@ -73,6 +73,8 @@ public class SysUser implements Serializable {
      * 账号状态：1-正常, 0-禁用(黑名单)
      */
     private Integer status;
+    //审核学号姓名
+    private Integer auditStatus; // 0-未绑定, 1-审核中, 2-已通过, 3-驳回
 
     /**
      * 黑名单解封时间

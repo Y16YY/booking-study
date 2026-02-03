@@ -1,9 +1,14 @@
 package com.bookingstudyserve.controller;
 
 
-import org.springframework.web.bind.annotation.RequestMapping;
-
-import org.springframework.web.bind.annotation.RestController;
+import com.bookingstudyserve.common.Result;
+import com.bookingstudyserve.domain.dto.UserBindDTO;
+import com.bookingstudyserve.domain.po.SysUser;
+import com.bookingstudyserve.domain.vo.UserProfileVO;
+import com.bookingstudyserve.service.ISysUserService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * <p>
@@ -14,7 +19,33 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 2026-02-02
  */
 @RestController
-@RequestMapping("/sys-user")
+@RequestMapping("/api/user")
+@Slf4j
 public class SysUserController {
+
+    @Autowired
+    private ISysUserService sysUserService;
+
+    /**
+     * 提交身份绑定申请
+     */
+    @PostMapping("/bind")
+    public Result<String> bindInfo(@RequestBody UserBindDTO dto) {
+//        String userId = UserContext.getUserId();
+        String userId = "fa8ff5bb47e84fee90e09ddc5267bf1f";
+        return sysUserService.bindStudentInfo(userId, dto);
+
+    }
+
+    /**
+     * 获取最新用户信息 (用于个人中心刷新状态)
+     */
+    @GetMapping("/info")
+    public Result<UserProfileVO> getUserInfo() {
+//        String userId = UserContext.getUserId();
+        log.info("获取用户信息");
+        String userId = "fa8ff5bb47e84fee90e09ddc5267bf1f";
+        return sysUserService.getUserProfile(userId);
+    }
 
 }
