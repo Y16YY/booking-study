@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.bookingstudyserve.common.Result;
 import com.bookingstudyserve.domain.po.SysUser;
 import com.bookingstudyserve.service.ISysUserService;
+import com.bookingstudyserve.utils.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,15 +84,20 @@ public class WeChatAuthController {
 
         // --- C. 构造返回数据 ---
 
-        // 准备返回给前端的数据包
+        // 1. 准备要放入 Token 的载荷 (Claims)
+        Map<String, Object> claims = new HashMap<>();
+        // 注意：这里的 Key ("userId") 必须和你在 LoginInterceptor 里读取的 Key 完全一致
+        claims.put("userId", user.getUserId());
+
+        // 2. 调用 JwtUtil 生成真实的加密 Token
+        String token = JwtUtil.createToken(claims);
+
+        // 3. 组装返回给前端的数据包
         Map<String, Object> data = new HashMap<>();
+        data.put("token", token);      // 现在返回的是一长串加密字符串了
+        data.put("userInfo", user);    // 依然返回用户信息供前端展示
 
-        // token: 这里暂时直接用 userId 作为简单的身份标识
-        // (正式上线建议使用 JWT 工具生成加密 Token)
-        data.put("token", user.getUserId());
-
-        // userInfo: 把用户信息返回去，前端要在“个人中心”显示名字、学号等
-        data.put("userInfo", user);
+        log.info("用户登录成功，ID: {}, Token已生成", user.getUserId());
 
         return Result.success(data);
     }

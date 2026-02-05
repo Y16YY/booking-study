@@ -2,6 +2,7 @@ package com.bookingstudyserve.controller;
 
 
 import com.bookingstudyserve.common.Result;
+import com.bookingstudyserve.common.UserContext;
 import com.bookingstudyserve.domain.dto.UserBindDTO;
 import com.bookingstudyserve.domain.po.SysUser;
 import com.bookingstudyserve.domain.vo.UserProfileVO;
@@ -31,8 +32,7 @@ public class SysUserController {
      */
     @PostMapping("/bind")
     public Result<String> bindInfo(@RequestBody UserBindDTO dto) {
-//        String userId = UserContext.getUserId();
-        String userId = "fa8ff5bb47e84fee90e09ddc5267bf1f";
+        String userId = UserContext.getUserId();
         return sysUserService.bindStudentInfo(userId, dto);
 
     }
@@ -42,9 +42,8 @@ public class SysUserController {
      */
     @GetMapping("/info")
     public Result<UserProfileVO> getUserInfo() {
-//        String userId = UserContext.getUserId();
-        log.info("获取用户信息");
-        String userId = "fa8ff5bb47e84fee90e09ddc5267bf1f";
+        String userId = UserContext.getUserId();
+        log.info("获取用户信息{}", userId);
         return sysUserService.getUserProfile(userId);
     }
 

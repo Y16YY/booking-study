@@ -2,6 +2,7 @@ package com.bookingstudyserve.controller;
 
 
 import com.bookingstudyserve.common.Result;
+import com.bookingstudyserve.common.UserContext;
 import com.bookingstudyserve.domain.dto.BookingSubmitDTO;
 import com.bookingstudyserve.domain.po.BizBooking;
 import com.bookingstudyserve.service.IBizBookingService;
@@ -30,10 +31,7 @@ public class BizBookingController {
     @PostMapping("/submit")
     public Result<String> submitBooking(@RequestBody BookingSubmitDTO dto) {
         // 1. 获取当前登录用户的 ID (从 Token 中解析)
-        // 如果你没有 UserContext，这里可以先写死一个 ID 测试，比如 "2023001"
-        // String userId = "2023001";
-//        String userId = UserContext.getUserId();
-        String userId = "fa8ff5bb47e84fee90e09ddc5267bf1f";
+        String userId = UserContext.getUserId();
         log.info("用户 {} 提交预约", userId);
         if (userId == null) {
             return Result.error("登陆失败");
@@ -48,8 +46,7 @@ public class BizBookingController {
      */
     @GetMapping("/my-list")
     public Result<List<BizBooking>> getMyBookingList() {
-//        String userId = UserContext.getUserId(); // 获取当前用户ID
-        String userId = "fa8ff5bb47e84fee90e09ddc5267bf1f";
+        String userId = UserContext.getUserId(); // 获取当前用户ID
         return bookingService.getMyBookingList(userId);
     }
 
@@ -58,8 +55,7 @@ public class BizBookingController {
      */
     @PostMapping("/cancel/{bookingId}")
     public Result<String> cancelBooking(@PathVariable Long bookingId) {
-//        String userId = UserContext.getUserId(); // 必须校验是不是自己的预约
-        String userId = "fa8ff5bb47e84fee90e09ddc5267bf1f";
+        String userId = UserContext.getUserId(); // 必须校验是不是自己的预约
         return bookingService.cancelBooking(bookingId, userId);
     }
 
