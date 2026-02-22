@@ -1,8 +1,12 @@
 package com.bookingstudyserve.mapper;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bookingstudyserve.domain.po.BizBooking;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.bookingstudyserve.domain.vo.BookingVO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * <p>
@@ -15,4 +19,12 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface BizBookingMapper extends BaseMapper<BizBooking> {
 
+    IPage<BookingVO> selectBookingPage(
+            @Param("page") Page<BookingVO> page,
+            @Param("realName") String realName,
+            @Param("studentId") String studentId,
+            @Param("bookingDate") String bookingDate,
+            @Param("role") Integer role,
+            @Param("status") Integer status
+    );
 }

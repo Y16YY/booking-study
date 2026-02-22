@@ -2,4 +2,37 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.bookingstudyserve.mapper.BizBookingMapper">
 
+    <select id="selectBookingPage" resultType="com.bookingstudyserve.domain.vo.BookingVO">
+        SELECT
+        b.booking_id,
+        b.booking_date,
+        b.start_slot,
+        b.end_slot,
+        b.description,
+        b.status,
+        u.user_id,
+        u.real_name,
+        u.student_id,
+        u.dept_name,
+        u.role  FROM biz_booking b  LEFT JOIN sys_user u ON b.user_id = u.user_id
+        <where>
+            <if test="status != null">
+                AND b.status = #{status}
+            </if>
+            <if test="role != null">
+                AND u.role = #{role}
+            </if>
+            <if test="realName != null and realName != ''">
+                AND u.real_name LIKE CONCAT('%', #{realName}, '%')
+            </if>
+            <if test="studentId != null and studentId != ''">
+                AND u.student_id LIKE CONCAT('%', #{studentId}, '%')
+            </if>
+            <if test="bookingDate != null and bookingDate != ''">
+                AND b.booking_date = #{bookingDate}
+            </if>
+        </where>
+        ORDER BY b.booking_date DESC, b.start_slot ASC
+    </select>
+
 </mapper>

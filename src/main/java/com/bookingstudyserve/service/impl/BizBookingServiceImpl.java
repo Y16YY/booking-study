@@ -2,15 +2,19 @@ package com.bookingstudyserve.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bookingstudyserve.common.Result;
 import com.bookingstudyserve.domain.dto.BookingSubmitDTO;
 import com.bookingstudyserve.domain.po.BizBooking;
 import com.bookingstudyserve.domain.po.SysUser;
+import com.bookingstudyserve.domain.vo.BookingVO;
 import com.bookingstudyserve.mapper.BizBookingMapper;
 import com.bookingstudyserve.service.IBizBookingService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bookingstudyserve.service.ISysRoomService;
 import com.bookingstudyserve.service.ISysUserService;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -40,6 +44,9 @@ public class BizBookingServiceImpl extends ServiceImpl<BizBookingMapper, BizBook
     @Autowired
     @Lazy
     private ISysUserService sysUserService;
+
+    @Autowired
+    private BizBookingMapper bookingMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class) // 务必加事务
@@ -246,4 +253,21 @@ public class BizBookingServiceImpl extends ServiceImpl<BizBookingMapper, BizBook
 
         return Result.success("预约已成功取消");
     }
+
+    @Override
+    public IPage<BookingVO> queryBookingPage(Page<BookingVO> page, String realName, String studentId, String bookingDate, Integer role, Integer status) {
+        return bookingMapper.selectBookingPage(page, realName, studentId, bookingDate, role, status);
+    }
+
+    @Override
+    @Transactional
+    public boolean batchApprove(List<Long> ids) {
+        return this.lambdaUpdate()
+                .set(BizBooking::getStatus, 2)
+                .in(BizBooking::getBookingId, ids)
+                .eq(BizBooking::getStatus, 1) // 确保只操作待审批
+                .update();
+    }
+
+
 }

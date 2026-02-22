@@ -29,6 +29,18 @@ public class AdminRoomController {
     }
 
     /**
+     * 删除教室
+     * @param roomId 教室ID
+     */
+    @DeleteMapping("/{roomId}")
+    public Result<String> deleteRoom(@PathVariable Integer roomId) {
+        // 1. 检查该教室是否有未完成的预约（建议增加此逻辑以防数据孤岛）
+        // 2. 执行删除
+        boolean removed = roomService.removeById(roomId);
+        return removed ? Result.success("教室已永久删除") : Result.error("删除失败，教室不存在");
+    }
+
+    /**
      * 修改教室状态 (手动设置 1-启用 或 2-维修中)
      */
     @PostMapping("/status/{roomId}")

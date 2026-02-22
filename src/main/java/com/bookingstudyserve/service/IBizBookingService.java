@@ -1,9 +1,12 @@
 package com.bookingstudyserve.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bookingstudyserve.common.Result;
 import com.bookingstudyserve.domain.dto.BookingSubmitDTO;
 import com.bookingstudyserve.domain.po.BizBooking;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.bookingstudyserve.domain.vo.BookingVO;
 
 import java.util.List;
 
@@ -22,4 +25,8 @@ public interface IBizBookingService extends IService<BizBooking> {
     Result<List<BizBooking>> getMyBookingList(String userId);
 
     Result<String> cancelBooking(Long bookingId, String userId);
+
+    IPage<BookingVO> queryBookingPage(Page<BookingVO> page, String realName, String studentId, String bookingDate, Integer role, Integer status);
+
+    boolean batchApprove(List<Long> ids);
 }

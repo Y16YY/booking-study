@@ -1,8 +1,12 @@
 package com.bookingstudyserve.controller.admin;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bookingstudyserve.common.Result;
 import com.bookingstudyserve.common.UserContext;
 import com.bookingstudyserve.domain.po.BizBooking;
+import com.bookingstudyserve.domain.vo.BookingVO;
 import com.bookingstudyserve.service.IBizBookingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -20,13 +24,20 @@ public class AdminBookingController {
     /**
      * 1. 获取所有待审批的预约单 (status = 0)
      */
-    @GetMapping("/pending")
-    public Result<List<BizBooking>> getPendingList() {
-        List<BizBooking> list = bookingService.lambdaQuery()
-                .eq(BizBooking::getStatus, 0)
-                .orderByDesc(BizBooking::getCreateTime) // 按申请时间倒序
-                .list();
-        return Result.success(list); // 使用你定义的 Result.success
+    @GetMapping("/page")
+    public Result<IPage<BookingVO>> getBookingPage(
+            @RequestParam(defaultValue = "1") Long current,
+            @RequestParam(defaultValue = "10") Long size,
+            String realName,
+            String studentId,
+            String bookingDate,
+            Integer role,
+            Integer status
+    ) {
+
+        Page<BookingVO> page = new Page<>(current, size);
+
+        return Result.success(bookingService.queryBookingPage(page, realName, studentId, bookingDate, role, status));
     }
 
     /**
@@ -42,6 +53,12 @@ public class AdminBookingController {
                 .set(BizBooking::getAuditTime, LocalDateTime.now())
                 .update();
         return updated ? Result.success("审批已通过") : Result.error("操作失败");
+    }
+
+
+    @PostMapping("/batch-approve")
+    public Result<String> batchApprove(@RequestBody List<Long> ids) {
+        return bookingService.batchApprove(ids) ? Result.success("操作成功") : Result.error("部分操作失败");
     }
 
     /**
