@@ -23,5 +23,6 @@ public class BookingSubmitDTO {
     private String supervisorName;  // 对应数据库 supervisor_name (新增的)
 
     private String fileUrl;
-    private Integer repeatType;
+    private Integer repeatType; // 0-单次, 1-每周, 2-双周
+    private String endDate;      // 批量预约的结束日期
 }

@@ -60,5 +60,7 @@ public class SysRoom implements Serializable {
      */
     private String equipmentInfo;
 
+    private String maintenanceRecord;
+
 
 }

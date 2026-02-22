@@ -82,4 +82,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         return Result.success(vo);
     }
 
+    @Override
+    public SysUser login(String studentId, String password) {
+        return this.lambdaQuery()
+                .eq(SysUser::getStudentId, studentId)
+                .eq(SysUser::getPassword, password)
+                .one();
+    }
+
 }

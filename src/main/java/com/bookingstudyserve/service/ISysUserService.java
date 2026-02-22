@@ -19,4 +19,6 @@ public interface ISysUserService extends IService<SysUser> {
     Result<String> bindStudentInfo(String userId, UserBindDTO dto);
 
     Result<UserProfileVO> getUserProfile(String userId);
+
+    SysUser login(String studentId, String password);
 }

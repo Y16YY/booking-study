@@ -25,6 +25,9 @@ public class LoginInterceptor implements HandlerInterceptor {
         }
 
         try {
+            if (token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
             // 3. 解析 Token (根据你自己的 JwtUtil 实现来写)
             Claims claims = JwtUtil.parseToken(token);
             String userId = claims.get("userId", String.class); // 假设 token 主体存的是 userId

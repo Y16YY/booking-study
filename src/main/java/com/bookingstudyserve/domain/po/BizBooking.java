@@ -35,7 +35,7 @@ public class BizBooking implements Serializable {
     // === 注意：PO里存的是具体的开始和结束，不是List ===
     private Integer startSlot;
     private Integer endSlot;
-
+//    状态：0-待审核, 1-已通过, 2-已驳回, 3-已完成, 4-已取消, 5-违规/缺席
     private Integer status;
     private Integer usageType;
 
@@ -65,6 +65,7 @@ public class BizBooking implements Serializable {
     private LocalDateTime createTime;
     private LocalDateTime auditTime;
     private String auditorId;
+
 
 
 }

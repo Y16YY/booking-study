@@ -1,6 +1,7 @@
 package com.bookingstudyserve.controller;
 
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.bookingstudyserve.common.Result;
 import com.bookingstudyserve.common.UserContext;
 import com.bookingstudyserve.domain.dto.BookingSubmitDTO;
@@ -8,9 +9,13 @@ import com.bookingstudyserve.domain.po.BizBooking;
 import com.bookingstudyserve.service.IBizBookingService;
 import com.bookingstudyserve.service.impl.BizBookingServiceImpl;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.ibatis.annotations.Delete;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 
 /**
@@ -53,10 +58,10 @@ public class BizBookingController {
     /**
      * 取消预约
      */
-    @PostMapping("/cancel/{bookingId}")
-    public Result<String> cancelBooking(@PathVariable Long bookingId) {
+    @DeleteMapping("/cancel/{id}")
+    public Result<String> cancelBooking(@PathVariable Long id) {
         String userId = UserContext.getUserId(); // 必须校验是不是自己的预约
-        return bookingService.cancelBooking(bookingId, userId);
+        return bookingService.cancelBooking(id, userId);
     }
 
 }
