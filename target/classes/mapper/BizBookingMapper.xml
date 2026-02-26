@@ -35,4 +35,28 @@
         ORDER BY b.booking_date DESC, b.start_slot ASC
     </select>
 
+    <select id="getDailyTrend" resultType="com.bookingstudyserve.domain.vo.ChartData">
+        SELECT DATE_FORMAT(booking_date, '%Y-%m-%d') AS name, COUNT(*) AS value
+        FROM biz_booking
+        WHERE booking_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+        GROUP BY booking_date
+        ORDER BY booking_date ASC
+    </select>
+
+    <select id="getTopRooms" resultType="com.bookingstudyserve.domain.vo.ChartData">
+        SELECT r.room_number AS name, COUNT(b.booking_id) AS value
+        FROM biz_booking b
+            JOIN sys_room r ON b.room_id = r.room_id
+        GROUP BY b.room_id
+        ORDER BY value DESC
+            LIMIT 5
+    </select>
+
+    <select id="getClassRatio" resultType="com.bookingstudyserve.domain.vo.ChartData">
+        SELECT u.class_name AS name, COUNT(b.booking_id) AS value
+        FROM biz_booking b
+            JOIN sys_user u ON b.user_id = u.user_id
+        WHERE u.role = 1
+        GROUP BY u.class_name
+    </select>
 </mapper>

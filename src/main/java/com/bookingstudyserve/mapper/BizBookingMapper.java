@@ -5,8 +5,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bookingstudyserve.domain.po.BizBooking;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.bookingstudyserve.domain.vo.BookingVO;
+import com.bookingstudyserve.domain.vo.ChartData;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * <p>
@@ -27,4 +30,10 @@ public interface BizBookingMapper extends BaseMapper<BizBooking> {
             @Param("role") Integer role,
             @Param("status") Integer status
     );
+
+    List<ChartData> getDailyTrend();
+
+    List<ChartData> getTopRooms();
+
+    List<ChartData> getClassRatio();
 }

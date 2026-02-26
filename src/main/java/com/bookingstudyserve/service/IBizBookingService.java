@@ -7,6 +7,7 @@ import com.bookingstudyserve.domain.dto.BookingSubmitDTO;
 import com.bookingstudyserve.domain.po.BizBooking;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.bookingstudyserve.domain.vo.BookingVO;
+import com.bookingstudyserve.domain.vo.ChartData;
 
 import java.util.List;
 
@@ -29,4 +30,10 @@ public interface IBizBookingService extends IService<BizBooking> {
     IPage<BookingVO> queryBookingPage(Page<BookingVO> page, String realName, String studentId, String bookingDate, Integer role, Integer status);
 
     boolean batchApprove(List<Long> ids);
+
+    List<ChartData> getDailyTrend();
+
+    List<ChartData> getTopRooms();
+
+    List<ChartData> getClassRatio();
 }

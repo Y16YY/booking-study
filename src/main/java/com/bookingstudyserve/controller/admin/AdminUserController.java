@@ -38,6 +38,7 @@ public class AdminUserController {
         wrapper.eq(auditStatus != null, SysUser::getAuditStatus, auditStatus);
         wrapper.like(StrUtil.isNotBlank(realName), SysUser::getRealName, realName);
         wrapper.like(StrUtil.isNotBlank(studentId), SysUser::getStudentId, studentId);
+        wrapper.ne(SysUser::getRole, 9);
 
         // 2. 默认按创建时间倒序
         wrapper.orderByDesc(SysUser::getCreatedAt);
@@ -79,5 +80,14 @@ public class AdminUserController {
         // logService.save(new CreditLog(userId, points, reason));
 
         return success ? Result.success("信用分调整成功") : Result.error("操作失败");
+    }
+
+    /**
+     * 账号启禁接口：更新 status (1-正常, 0-禁用)
+     */
+    @PostMapping("/status/{userId}")
+    public Result<String> toggleStatus(@PathVariable String userId, @RequestParam Integer status) {
+        boolean success = userService.updateUserStatus(userId, status);
+        return success ? Result.success("账号状态已更新") : Result.error("操作失败");
     }
 }

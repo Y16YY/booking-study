@@ -21,4 +21,6 @@ public interface ISysUserService extends IService<SysUser> {
     Result<UserProfileVO> getUserProfile(String userId);
 
     SysUser login(String studentId, String password);
+
+    boolean updateUserStatus(String userId, Integer status);
 }

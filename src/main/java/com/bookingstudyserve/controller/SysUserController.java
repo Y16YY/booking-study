@@ -33,6 +33,7 @@ public class SysUserController {
     @PostMapping("/bind")
     public Result<String> bindInfo(@RequestBody UserBindDTO dto) {
         String userId = UserContext.getUserId();
+        System.out.println("用户绑定信息：" + dto);
         return sysUserService.bindStudentInfo(userId, dto);
 
     }

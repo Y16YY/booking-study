@@ -40,6 +40,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
         user.setRealName(dto.getRealName());
         user.setStudentId(dto.getStudentId());
+        user.setClassName(dto.getClassName());
         user.setRole(dto.getRole());
         user.setAuditStatus(1); // 设置为 1-审核中
 
@@ -88,6 +89,14 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                 .eq(SysUser::getStudentId, studentId)
                 .eq(SysUser::getPassword, password)
                 .one();
+    }
+
+    @Override
+    public boolean updateUserStatus(String userId, Integer status) {
+        return this.lambdaUpdate()
+                .set(SysUser::getStatus, status) // 1-正常, 0-禁用
+                .eq(SysUser::getUserId, userId)
+                .update();
     }
 
 }

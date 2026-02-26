@@ -9,6 +9,7 @@ import com.bookingstudyserve.domain.dto.BookingSubmitDTO;
 import com.bookingstudyserve.domain.po.BizBooking;
 import com.bookingstudyserve.domain.po.SysUser;
 import com.bookingstudyserve.domain.vo.BookingVO;
+import com.bookingstudyserve.domain.vo.ChartData;
 import com.bookingstudyserve.mapper.BizBookingMapper;
 import com.bookingstudyserve.service.IBizBookingService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -52,6 +53,7 @@ public class BizBookingServiceImpl extends ServiceImpl<BizBookingMapper, BizBook
     @Transactional(rollbackFor = Exception.class) // 务必加事务
     public Result<String> submitBooking(BookingSubmitDTO dto, String userId) {
 
+
         // 1. 基础参数校验 (Slots 非空等)
         if (dto.getSlots() == null || dto.getSlots().isEmpty()) {
             return Result.error("请至少选择一个节次");
@@ -62,6 +64,9 @@ public class BizBookingServiceImpl extends ServiceImpl<BizBookingMapper, BizBook
 
         // 2. 获取用户身份 (需要查询 SysUser 表)
         SysUser user = sysUserService.getById(userId);
+        if(user.getAuditStatus() !=2 ){
+            return Result.error("用户未通过审核");
+        }
         boolean isTeacher = user.getRole() == 2; // 假设 2 是教师
 
         // ==========================================
@@ -267,6 +272,21 @@ public class BizBookingServiceImpl extends ServiceImpl<BizBookingMapper, BizBook
                 .in(BizBooking::getBookingId, ids)
                 .eq(BizBooking::getStatus, 1) // 确保只操作待审批
                 .update();
+    }
+
+    @Override
+    public List<ChartData> getDailyTrend() {
+        return bookingMapper.getDailyTrend();
+    }
+
+    @Override
+    public List<ChartData> getTopRooms() {
+        return bookingMapper.getTopRooms();
+    }
+
+    @Override
+    public List<ChartData> getClassRatio() {
+        return bookingMapper.getClassRatio();
     }
 
 

@@ -22,13 +22,13 @@ public class AuthController {
         System.out.println("登录请求：" + loginDto);
         // 1. 调用 Service 校验账号密码
         SysUser user = sysUserService.login(loginDto.getStudentId(), loginDto.getPassword());
-
+        System.out.println(user);
         if (user == null) {
             return Result.error("用户名或密码错误");
         }
 
-        // 2. 权限校验：确保是管理员身份 (role = 3)
-        if (user.getRole() != 3) {
+        // 2. 权限校验：确保是管理员身份 (role = 9)
+        if (user.getRole() != 9) {
             return Result.error("权限不足，该账号非管理员");
         }
 

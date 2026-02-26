@@ -88,5 +88,7 @@ public class SysUser implements Serializable {
 
     private LocalDateTime updatedAt;
 
+    private String className;
+
 
 }
