@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -53,106 +54,93 @@ public class BizBookingServiceImpl extends ServiceImpl<BizBookingMapper, BizBook
     @Transactional(rollbackFor = Exception.class) // 务必加事务
     public Result<String> submitBooking(BookingSubmitDTO dto, String userId) {
 
-
-        // 1. 基础参数校验 (Slots 非空等)
+        // 1. 基础参数校验
         if (dto.getSlots() == null || dto.getSlots().isEmpty()) {
             return Result.error("请至少选择一个节次");
         }
-        // 对 slots 排序
         List<Integer> slots = dto.getSlots();
         Collections.sort(slots);
 
-        // 2. 获取用户身份 (需要查询 SysUser 表)
+        // 2. 获取并校验用户身份
         SysUser user = sysUserService.getById(userId);
-        if(user.getAuditStatus() !=2 ){
-            return Result.error("用户未通过审核");
+        if (user.getAuditStatus() != 2) {
+            return Result.error("您的账号未通过认证，无法预约");
         }
-        boolean isTeacher = user.getRole() == 2; // 假设 2 是教师
+        boolean isTeacher = (user.getRole() == 2);
 
-        // ==========================================
-        // 分支逻辑 A：学生 (有周限制，只能单次)
-        // ==========================================
+        // 3. 学生专属规则校验
         if (!isTeacher) {
-            // --- 校验连续性 (学生专属规则) ---
             if (!checkConsecutive(slots)) {
                 return Result.error("学生预约的节次必须是连续的");
             }
-
-            // --- 校验周配额 (学生专属规则) ---
-            checkWeeklyLimit(userId);
-
-            // --- 执行单次保存 ---
-            LocalDate date = LocalDate.parse(dto.getDate());
             try {
-                doSaveSingleBooking(dto, userId, date, slots);
+                checkWeeklyLimit(userId);
             } catch (RuntimeException e) {
                 return Result.error(e.getMessage());
             }
-            return Result.success("预约提交成功");
         }
 
-        // ==========================================
-        // 分支逻辑 B：教师 (无限制，支持批量)
-        // ==========================================
-        else {
-            // 1. 计算需要预约的所有日期列表
-            List<LocalDate> dateList = calculateBatchDates(dto);
+        // 4. 计算需要预约的日期列表 (学生永远只有1天，老师根据重复规则可能有多天)
+        List<LocalDate> dateList;
+        if (!isTeacher) {
+            dateList = Collections.singletonList(LocalDate.parse(dto.getDate()));
+        } else {
+            dateList = calculateBatchDates(dto);
+        }
 
-            // 2. 循环保存
-            try {
-                for (LocalDate date : dateList) {
-                    doSaveSingleBooking(dto, userId, date, slots);
-                }
-            } catch (RuntimeException e) {
-                // 只要有一天失败（比如容量不足），事务会自动回滚，之前的也不会保存
-                // TransactionAspectSupport.currentTransactionStatus().setRollbackOnly(); // 手动回滚(可选)
-                return Result.error("批量预约失败：" + e.getMessage());
+        // 5. 执行循环保存
+        try {
+            for (LocalDate date : dateList) {
+                doSaveSingleBooking(dto, userId, date, slots, user.getRole());
             }
-
-            return Result.success("成功预约 " + dateList.size() + " 次课程");
+        } catch (RuntimeException e) {
+            // ⭐ 重点修复：被 catch 拦截的异常不会触发事务回滚，必须手动标记回滚
+            // 否则批量预约时，前几天成功后几天失败，前几天的数据会变成脏数据存进数据库
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            return Result.error(e.getMessage());
         }
+
+        if (isTeacher && dateList.size() > 1) {
+            return Result.success("成功批量预约 " + dateList.size() + " 次课程");
+        }
+        return Result.success("预约提交成功");
     }
 
     /**
      * 通用底层方法：仅负责将"单天"的预约请求入库
-     * 适用于：学生单次预约、教师批量预约循环中的每一次
      */
-    private void doSaveSingleBooking(BookingSubmitDTO dto, String userId, LocalDate date, List<Integer> slots) {
+    private void doSaveSingleBooking(BookingSubmitDTO dto, String userId, LocalDate date, List<Integer> slots, Integer role) {
         // 1. 并发容量检查
-        // 这里必须用传入的 date，而不是 DTO 里的 date (因为批量预约时日期会变)
         Map<Integer, Integer> capacityMap = roomService.getRoomSlotCapacity(dto.getRoomId(), date.toString(), dto.getSection());
 
         for (Integer slot : slots) {
             Integer left = capacityMap.get(slot);
             if (left != null && left <= 0) {
-                // 抛出异常触发事务回滚 (批量预约时只要有一天满员，整体失败)
-                throw new RuntimeException(date + " 第 " + slot + " 节课已满员，预约失败");
+                throw new RuntimeException("【防撞单拦截】" + date + " 第 " + slot + " 节课已被抢先预约！");
             }
         }
 
-        // 2. 组装 PO 实体 (复用你原来的 D 步骤)
+        // 2. 组装 PO 实体
         BizBooking booking = new BizBooking();
-        BeanUtil.copyProperties(dto, booking); // 拷贝基础字段
+        // 这里的 copy 会把前端传来的 usageType, description, fileUrl 等新字段自动塞入 booking
+        BeanUtil.copyProperties(dto, booking);
 
         booking.setUserId(userId);
-        booking.setBookingDate(date); // === 关键：使用传入的日期 ===
-
-        // 计算起止节次
+        booking.setBookingDate(date);
         booking.setStartSlot(slots.get(0));
         booking.setEndSlot(slots.get(slots.size() - 1));
 
-        // 3. 状态设置
-        // 老师预约直接通过(1)，学生需要审核(0)
-        SysUser user = sysUserService.getById(userId);
-        if (user.getRole() == 2) {
-            booking.setStatus(1);
+        // ⭐ 3. 全新状态设置逻辑 (依赖 usageType)
+        // 规则：必须是教师 (role=2) 且是 计划内导入 (usageType=1)，才直接生效
+        if (role == 2 && dto.getUsageType() != null && dto.getUsageType() == 1) {
+            booking.setStatus(1); // 直接生效 (已通过)
+        } else {
+            booking.setStatus(0); // 学生，以及教师的计划外，全部待审核
         }
-        else {
-            booking.setStatus(0);
-        }
+
         booking.setCreateTime(LocalDateTime.now());
 
-        // 4. 保存 (复用你原来的 E 步骤)
+        // 4. 保存
         boolean success = this.save(booking);
         if (!success) {
             throw new RuntimeException("系统异常，预约保存失败");
@@ -168,7 +156,7 @@ public class BizBookingServiceImpl extends ServiceImpl<BizBookingMapper, BizBook
         return true;
     }
 
-    // 2. 校验周限制 (直接复制你原来的逻辑)
+    // 2. 校验周限制
     private void checkWeeklyLimit(String userId) {
         LocalDate now = LocalDate.now();
         LocalDate monday = now.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
@@ -177,7 +165,6 @@ public class BizBookingServiceImpl extends ServiceImpl<BizBookingMapper, BizBook
         long count = this.count(new LambdaQueryWrapper<BizBooking>()
                 .eq(BizBooking::getUserId, userId)
                 .between(BizBooking::getBookingDate, monday, sunday)
-                // 排除已驳回(2)和已取消(4)。
                 .notIn(BizBooking::getStatus, 2, 4));
 
         if (count >= 3) {
@@ -185,13 +172,12 @@ public class BizBookingServiceImpl extends ServiceImpl<BizBookingMapper, BizBook
         }
     }
 
-    // 3. 计算批量日期 (核心)
+    // 3. 计算批量日期
     private List<LocalDate> calculateBatchDates(BookingSubmitDTO dto) {
         List<LocalDate> dates = new ArrayList<>();
         LocalDate startDate = LocalDate.parse(dto.getDate());
-        dates.add(startDate); // 加上第一天
+        dates.add(startDate);
 
-        // 如果 repeatType > 0 (1=每周, 2=双周) 且有结束日期
         if (dto.getRepeatType() != null && dto.getRepeatType() > 0 && dto.getEndDate() != null) {
             LocalDate endDate = LocalDate.parse(dto.getEndDate());
             LocalDate nextDate = startDate;
@@ -209,7 +195,6 @@ public class BizBookingServiceImpl extends ServiceImpl<BizBookingMapper, BizBook
 
     @Override
     public Result<List<BizBooking>> getMyBookingList(String userId) {
-        // 查询条件：user_id = 当前用户，按创建时间倒序
         LambdaQueryWrapper<BizBooking> query = new LambdaQueryWrapper<>();
         query.eq(BizBooking::getUserId, userId)
                 .orderByDesc(BizBooking::getCreateTime);
@@ -223,15 +208,12 @@ public class BizBookingServiceImpl extends ServiceImpl<BizBookingMapper, BizBook
         BizBooking booking = this.getById(bookingId);
         if (booking == null) return Result.error("记录不存在");
 
-        // 1. 权限校验
         if (!booking.getUserId().equals(userId)) return Result.error("无权操作");
 
-        // 2. 状态校验：只有待审核(0)或已通过(1)可以取消
         if (booking.getStatus() != 0 && booking.getStatus() != 1) {
             return Result.error("当前状态不可取消");
         }
 
-        // 3. 时间校验：必须提前24小时
         Map<Integer, LocalTime> timeMap = new HashMap<>();
         timeMap.put(1, LocalTime.of(8, 0));
         timeMap.put(2, LocalTime.of(8, 50));
@@ -246,12 +228,10 @@ public class BizBookingServiceImpl extends ServiceImpl<BizBookingMapper, BizBook
         LocalTime startTime = timeMap.getOrDefault(booking.getStartSlot(), LocalTime.of(8, 0));
         LocalDateTime bookingStart = LocalDateTime.of(booking.getBookingDate(), startTime);
 
-        // 3. 24小时校验
         if (LocalDateTime.now().plusHours(24).isAfter(bookingStart)) {
             return Result.error("距离预约开始不足24小时，无法取消");
         }
 
-        // 4. 逻辑取消：更新状态为 4 (已取消)
         booking.setStatus(4);
         booking.setAuditTime(LocalDateTime.now());
         this.updateById(booking);
@@ -270,7 +250,7 @@ public class BizBookingServiceImpl extends ServiceImpl<BizBookingMapper, BizBook
         return this.lambdaUpdate()
                 .set(BizBooking::getStatus, 2)
                 .in(BizBooking::getBookingId, ids)
-                .eq(BizBooking::getStatus, 1) // 确保只操作待审批
+                .eq(BizBooking::getStatus, 1)
                 .update();
     }
 
@@ -289,5 +269,42 @@ public class BizBookingServiceImpl extends ServiceImpl<BizBookingMapper, BizBook
         return bookingMapper.getClassRatio();
     }
 
+    @Override
+    public Result<IPage<BookingVO>> getRecordPage(Integer current, Integer size, String keyword, String startDate, String endDate, Integer status, Integer usageType) {
+        // 在 Service 层组装分页对象
+        Page<BookingVO> page = new Page<>(current, size);
+        // 调用 Mapper 层查数据库
+        IPage<BookingVO> result = bookingMapper.selectRecordPage(page, keyword, startDate, endDate, status, usageType);
+        return Result.success(result);
+    }
 
+    @Override
+    public Result<String> forceCancel(Long bookingId, String reason) {
+        BizBooking booking = this.getById(bookingId);
+        if (booking == null) {
+            return Result.error("找不到该预约记录");
+        }
+
+        // 状态校验
+        if (booking.getStatus() != 0 && booking.getStatus() != 1) {
+            return Result.error("当前状态不可被取消");
+        }
+
+        // 执行业务逻辑：改状态，追加取消原因
+        booking.setStatus(4);
+        booking.setAuditTime(LocalDateTime.now());
+        String oldDesc = booking.getDescription() == null ? "" : booking.getDescription();
+        booking.setDescription(oldDesc + " 【管理员强制取消原因：" + reason + "】");
+        //TODO 发送预约被取消的邮件给预约用户
+
+        this.updateById(booking);
+        return Result.success("已强制取消该预约");
+    }
+
+    @Override
+    public Result<String> deleteBooking(Long id) {
+        // 直接复用 MyBatis-Plus 的 removeById
+        boolean success = this.removeById(id);
+        return success ? Result.success("删除成功") : Result.error("删除失败，记录可能不存在");
+    }
 }

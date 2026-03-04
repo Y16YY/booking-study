@@ -51,6 +51,7 @@ public class BookingScheduleTask {
      * 定时任务：每 10 分钟执行一次
      * cron = "0 0/10 * * * ?"
      */
+//    @Scheduled(cron = "0/5 * * * * ?")
     @Scheduled(cron = "0 0/10 * * * ?")
     public void checkOverdueBookings() {
         log.info("【系统任务】开始巡检逾期未签到的微格教室预约...");
@@ -60,7 +61,8 @@ public class BookingScheduleTask {
 
         // 查询所有今天且状态为 1 (已通过，等待签到) 的预约记录
         LambdaQueryWrapper<BizBooking> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(BizBooking::getStatus, 1);
+        wrapper.eq(BizBooking::getStatus, 1)
+                .eq(BizBooking::getBookingDate, today);
 
         List<BizBooking> pendingBookings = bookingService.list(wrapper);
 
@@ -116,6 +118,7 @@ public class BookingScheduleTask {
      * 任务2：每小时执行一次，自动解封到期的账号
      * cron = "0 0 * * * ?" 表示每小时的第 0 分钟执行
      */
+//    @Scheduled(cron = "0/5 * * * * ?")
     @Scheduled(cron = "0 0 * * * ?")
     public void unlockBlacklistUsers() {
         LocalDateTime now = LocalDateTime.now();

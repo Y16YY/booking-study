@@ -36,4 +36,10 @@ public interface IBizBookingService extends IService<BizBooking> {
     List<ChartData> getTopRooms();
 
     List<ChartData> getClassRatio();
+
+    Result<IPage<BookingVO>> getRecordPage(Integer current, Integer size, String keyword, String startDate, String endDate, Integer status, Integer usageType);
+
+    Result<String> forceCancel(Long id, String reason);
+
+    Result<String> deleteBooking(Long id);
 }

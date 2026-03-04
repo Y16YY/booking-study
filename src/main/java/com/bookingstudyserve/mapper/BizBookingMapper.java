@@ -36,4 +36,11 @@ public interface BizBookingMapper extends BaseMapper<BizBooking> {
     List<ChartData> getTopRooms();
 
     List<ChartData> getClassRatio();
+
+    IPage<BookingVO> selectRecordPage(Page<BookingVO> page,
+                                      @Param("keyword") String keyword,
+                                      @Param("startDate") String startDate,
+                                      @Param("endDate") String endDate,
+                                      @Param("status") Integer status,
+                                      @Param("usageType") Integer usageType);
 }

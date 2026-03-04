@@ -59,4 +59,36 @@
         WHERE u.role = 1
         GROUP BY u.class_name
     </select>
+    <select id="selectRecordPage" resultType="com.bookingstudyserve.domain.vo.BookingVO">
+        SELECT
+        b.*,
+        u.real_name AS realName,
+        u.student_id AS studentId,
+        r.room_number AS roomNumber
+        FROM biz_booking b
+        LEFT JOIN sys_user u ON b.user_id = u.user_id
+        LEFT JOIN sys_room r ON b.room_id = r.room_id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                u.real_name LIKE CONCAT('%', #{keyword}, '%')
+                OR u.student_id LIKE CONCAT('%', #{keyword}, '%')
+                OR r.room_number LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+            <if test="startDate != null and startDate != ''">
+                AND b.booking_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null and endDate != ''">
+                AND b.booking_date &lt;= #{endDate}
+            </if>
+            <if test="status != null">
+                AND b.status = #{status}
+            </if>
+            <if test="usageType != null">
+                AND b.usage_type = #{usageType}
+            </if>
+        </where>
+        ORDER BY b.create_time DESC
+    </select>
 </mapper>

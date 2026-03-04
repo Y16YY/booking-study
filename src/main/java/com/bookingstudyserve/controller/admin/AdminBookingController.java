@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/bookings")
@@ -75,6 +76,38 @@ public class AdminBookingController {
                 .set(BizBooking::getAuditTime, LocalDateTime.now())
                 .update();
         return updated ? Result.success("申请已驳回") : Result.error("操作失败");
+    }
+    /**
+     * 1. 分页查询所有预约记录
+     */
+    @GetMapping("/records")
+    public Result<IPage<BookingVO>> getRecords(
+            @RequestParam(defaultValue = "1") Integer current,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Integer usageType) {
+
+        // 绝对不在 Controller 里 new Page，直接把参数原封不动扔给 Service
+        return bookingService.getRecordPage(current, size, keyword, startDate, endDate, status, usageType);
+    }
+
+    /**
+     * 2. 管理员强制取消预约
+     */
+    @PutMapping("/{id}/force-cancel")
+    public Result<String> forceCancel(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        return bookingService.forceCancel(id, body.get("reason"));
+    }
+
+    /**
+     * 3. 删除预约记录
+     */
+    @DeleteMapping("/{id}")
+    public Result<String> deleteBooking(@PathVariable Long id) {
+        return bookingService.deleteBooking(id);
     }
 
 
